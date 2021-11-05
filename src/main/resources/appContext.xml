@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util" 
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:amq="http://activemq.apache.org/schema/core"
+       xmlns:jms="http://www.springframework.org/schema/jms"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://activemq.apache.org/schema/core
+        http://activemq.apache.org/schema/core/activemq-core.xsd
+        http://www.springframework.org/schema/jms 
+        http://www.springframework.org/schema/jms/spring-jms-3.0.xsd">
+   
+   
+   <context:component-scan base-package="com.habuma.spitter.alerts"></context:component-scan>
+   
+  
+   
+   <amq:connectionFactory id="connectionFactory" brokerURL="tcp://localhost:61616"></amq:connectionFactory>
+   
+   <!-- Альтернативное обЪявление connectionFactory как бина Spring -->
+   <!--  <bean id="connectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
+			<property name="brokerURL" value="tcp://localhost:61616"/>
+		</bean> -->
+		
+	<!-- It is destination for JMS -->
+	<amq:queue id="queue" physicalName="spittle.alert.queue"/>
+	
+	
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property	name="connectionFactory"	ref="connectionFactory"/>
+	</bean>
+	
+	
+	<!-- Обявление pooling DataSource dbcp для PostgreSQL  -->  
+  <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+    <property name="driverClassName" value="org.postgresql.Driver" />
+  	<property name="url" value="jdbc:postgresql://localhost/spitter" />
+  	<property name="username" value="spitter" />
+  	<property name="password" value="spitter" />
+  	<property name="initialSize" value="5"/>
+    <!--  <property name="maxActive" value="10"/>-->
+ </bean>
+ 
+ <bean id="spittleHandler" class="com.habuma.spitter.alerts.SpittleAlertHandler"/>
+ 
+ <jms:listener-container connection-factory="connectionFactory">
+ 	<jms:listener destination="spittle.alert.queue" ref="spittleHandler" method="processSpittle"/>
+ </jms:listener-container>
+   
+
+    	
+</beans>
